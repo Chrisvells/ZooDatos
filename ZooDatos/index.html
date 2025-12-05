@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ZooDatos — Aprendiendo sobre animales</title>
+  <style>
+  :root {
+    --bg: #ffffff;
+    --fg: #111827;
+    --accent: #2563eb;
+    --card: #f3f4f6;
+    --pastel-a: #ffd6e0;
+    --pastel-b: #e6f7ff;
+    --pastel-c: #f7f0ff;
+    --panel-bg: rgba(255,255,255,0.96);
+  }
+  body.dark {
+    --bg: #0b1220;
+    --fg: #e6eef8;
+    --accent: #3b82f6;
+    --card: #0f1724;
+    --panel-bg: rgba(8,12,18,0.95);
+  }
+
+  /* base */
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background:var(--bg); color:var(--fg); min-height:100vh; position:relative; overflow-x:hidden;
+  }
+
+  /* logo/header top-left (fixed) */
+  .site-header {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo {
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    text-decoration:none;
+    padding:6px 10px;
+    border-radius:10px;
+    transition:transform .12s ease;
+    backdrop-filter: blur(6px);
+    box-shadow:0 6px 18px rgba(15,15,40,0.06);
+    background: transparent;
+  }
+  .logo-mark {
+    width:40px;
+    height:40px;
+    border-radius:9px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    color:#fff;
+    font-size:18px;
+    line-height:1;
+    background: linear-gradient(135deg,#ff9ec1 0%,#ffd7a8 60%);
+    box-shadow:0 6px 18px rgba(99,64,189,0.08);
+    flex-shrink:0;
+  }
+  .logo-text {
+    font-weight:800;
+    font-size:18px;
+    line-height:1;
+    display:inline-block;
+    background: linear-gradient(90deg,#ffd7a8 0%,#cbd7ff 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color: transparent; /* better support */
+    color: transparent;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.02);
+    white-space:nowrap;
+  }
+  body.dark .logo-mark { background: linear-gradient(135deg,#3b82f6 0%,#60a5fa 100%); box-shadow:0 6px 18px rgba(0,0,0,0.45); }
+  body.dark .logo-text { background: linear-gradient(90deg,#9fc8ff 0%,#b3d7ff 100%); -webkit-text-fill-color: transparent; color: transparent; }
+
+  /* ensure switch and header don't overlap (switch above header if necessary) */
+  .card { z-index: 10003; } /* raised so switch stays visible */
+
+  /* decorative tiled SVG background (animal paw prints, pastel) */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill-opacity='0.95'><circle cx='18' cy='28' r='6' fill='%23ffd6e0'/><circle cx='34' cy='18' r='6' fill='%23e6f7ff'/><circle cx='50' cy='28' r='6' fill='%23f7f0ff'/><circle cx='34' cy='52' r='12' fill='%23ffd6e0'/></g></svg>");
+    background-repeat:repeat; background-size:160px 160px; opacity:0.14; transition:opacity .25s ease;
+  }
+  body.dark::before{
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill-opacity='0.95'><circle cx='18' cy='28' r='6' fill='%233b82f6'/><circle cx='34' cy='18' r='6' fill='%2360a5fa'/><circle cx='50' cy='28' r='6' fill='%233b82f6'/><circle cx='34' cy='52' r='12' fill='%233b82f6'/></g></svg>");
+    opacity:0.08;
+  }
+  body::after{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background: linear-gradient(120deg, rgba(255,157,193,0.06) 0%, rgba(255,215,168,0.04) 40%, rgba(203,215,255,0.05) 100%); mix-blend-mode: overlay; }
+
+  /* content above decorations */
+  .hero, .gallery, .card, .viewer-overlay, .detail-panel, .site-footer { position: relative; z-index: 1; }
+
+  /* Hero / título */
+  .hero { max-width:920px; margin:84px auto 24px; padding:32px 20px; text-align:center; }
+  .main-title { font-size:clamp(28px,5vw,44px); line-height:1.02; font-weight:800; margin:0 0 10px;
+    background: linear-gradient(90deg,#ff9ec1 0%,#ffd7a8 40%,#cbd7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 6px 18px rgba(99,64,189,0.06); letter-spacing:-0.6px; }
+  .lead { max-width:780px; margin:0 auto; font-size:18px; color:rgba(17,24,39,0.85); padding:8px 14px; border-radius:8px; }
+  body.dark .lead { color: rgba(230,238,248,0.86); }
+
+  /* gallery grid - changed card background color to plain white in light mode, dark in dark mode */
+  .gallery { max-width:1100px; margin:18px auto 48px; padding:0 20px; display:grid; grid-template-columns:repeat(4,1fr); gap:18px; align-items:start; }
+  .animal-card {
+    background: #ffffff; /* light: white card */
+    color: var(--fg);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 8px 20px rgba(15,15,40,0.06);
+    transition:transform .18s, box-shadow .18s;
+    display:flex;
+    flex-direction:column;
+    cursor:pointer;
+    outline:none;
+  }
+  body.dark .animal-card {
+    background: #0f1724; /* dark card color */
+    color: var(--fg);
+    box-shadow:0 8px 24px rgba(2,6,23,0.45);
+  }
+  .animal-card img { width:100%; height:160px; object-fit:cover; display:block; transition:transform .25s; }
+  .animal-card figcaption { padding:12px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  .animal-card h3 { margin:0; font-size:16px; font-weight:700; color:inherit; }
+  .animal-card p { margin:8px 0 0; font-size:13px; color:rgba(0,0,0,0.6); }
+  body.dark .animal-card p { color: rgba(230,238,248,0.72); }
+
+  .animal-card:hover{ transform:translateY(-6px); box-shadow:0 18px 40px rgba(15,15,40,0.12); }
+  .animal-card:focus-visible{ box-shadow:0 0 0 4px rgba(37,99,235,0.14); transform:translateY(-4px); }
+
+  /* viewer overlay */
+  .viewer-overlay { position:fixed; inset:0; background:rgba(2,6,23,0.45); display:none; align-items:center; justify-content:center; z-index:12000; transition:opacity .18s; }
+  .viewer-overlay.open{ display:flex; }
+  .detail-panel { width:min(920px,calc(100% - 48px)); max-height:calc(100vh - 48px); background:var(--panel-bg); border-radius:12px; overflow:hidden; display:grid; grid-template-columns:1fr 420px; box-shadow:0 20px 60px rgba(2,6,23,0.6); transform:translateY(8px) scale(.99); opacity:0; transition:transform .22s, opacity .22s; }
+  .viewer-overlay.open .detail-panel { transform:translateY(0) scale(1); opacity:1; }
+  .viewer-media{ background:#000; display:flex; align-items:center; justify-content:center; }
+  .viewer-media img{ max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .viewer-info{ padding:18px; color:var(--fg); overflow:auto; }
+  .viewer-info h2{ margin:0 0 8px; font-size:20px; }
+  .viewer-info .meta{ font-size:13px; color:rgba(0,0,0,0.6); margin-bottom:12px; }
+  body.dark .viewer-info .meta { color: rgba(230,238,248,0.7); }
+  .viewer-info p{ margin:0 0 12px; line-height:1.45; color:rgba(0,0,0,0.75); }
+  body.dark .viewer-info p { color: rgba(230,238,248,0.86); }
+
+  /* close button styling (fix 'x' placement and visibility) */
+  .btn-close{
+    margin-left:auto;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .btn-close:hover, .btn-close:focus { background: rgba(0,0,0,0.06); outline: none; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  body.dark .btn-close:hover { background: rgba(255,255,255,0.04); }
+
+  /* top-right theme card */
+  .card{ background:var(--card); padding:10px 12px; border-radius:10px; box-shadow:0 6px 20px rgba(2,6,23,0.12); display:flex; gap:12px; align-items:center; width:220px; justify-content:space-between; position:fixed; top:12px; right:12px; z-index:10003; backdrop-filter:blur(6px); }
+  .label{ display:flex; flex-direction:column; gap:4px; }
+  .title{ font-weight:600; font-size:13px; } .subtitle{ font-size:12px; color:rgba(0,0,0,0.6); } body.dark .subtitle{ color:rgba(255,255,255,0.65); }
+
+  .switch{ --w:44px; --h:24px; width:var(--w); height:var(--h); background:rgba(0,0,0,0.12); border-radius:calc(var(--h)/2); position:relative; display:inline-block; cursor:pointer; transition:background .18s; flex-shrink:0; }
+  .knob{ width:calc(var(--h)-6px); height:calc(var(--h)-6px); background:white; border-radius:50%; position:absolute; top:3px; left:3px; transition:transform .18s, background .18s; box-shadow:0 2px 6px rgba(2,6,23,0.18); }
+  .switch.on{ background:linear-gradient(90deg,var(--accent),#60a5fa); } .switch.on .knob{ transform:translateX(calc(var(--w)-var(--h))); }
+  .switch:focus-visible{ box-shadow:0 0 0 4px rgba(37,99,235,0.14); }
+
+  /* footer */
+  .site-footer{ width:100%; background: linear-gradient(90deg, rgba(255,218,233,0.95), rgba(229,245,255,0.95)); color:#2b2b3a; padding:16px 20px; text-align:center; font-size:16px; border-top:1px solid rgba(0,0,0,0.06); box-shadow:0 -6px 20px rgba(15,15,40,0.04); margin-top:24px; }
+  .site-footer .footer-email{ margin-top:8px; font-weight:700; font-size:15px; color:inherit; text-align:center; }
+  body.dark .site-footer{ background: linear-gradient(90deg, rgba(11,17,32,0.92), rgba(16,22,36,0.92)); color: rgba(230,238,248,0.9); border-top-color: rgba(255,255,255,0.04); box-shadow: 0 -6px 20px rgba(0,0,0,0.6); }
+
+  /* responsive */
+  @media (max-width:1000px){ .gallery{ grid-template-columns:repeat(3,1fr); } .detail-panel{ grid-template-columns:1fr 360px; } }
+  @media (max-width:720px){ .gallery{ grid-template-columns:repeat(2,1fr); } .hero{ margin-top:72px; padding:22px 14px; } .lead{ font-size:16px; } .detail-panel{ grid-template-columns:1fr; width:calc(100% - 32px); } }
+  @media (max-width:420px){ .gallery{ grid-template-columns:1fr; gap:12px; padding:0 12px; } .card{ width:180px; top:8px; right:8px; } .logo-text{ display:none; } .switch{ --w:40px; --h:20px; } }
+  </style>
+</head>
+<body>
+  <header class="site-header" role="banner" aria-label="Barra superior">
+    <a href="#" class="logo" aria-label="ZooDatos - Inicio">
+      <div class="logo-mark" aria-hidden="true">Z</div>
+      <span class="logo-text">ZooDatos</span>
+    </a>
+  </header>
+
+  <main class="hero" role="main" aria-labelledby="site-title">
+    <h1 id="site-title" class="main-title">Aprendiendo sobre animales</h1>
+    <p class="lead">en mi pagina web creada con javascript conoceremos el mecanismo de defensa de algunos animales y algunas curiosidades sobre estos mismo</p>
+  </main>
+
+  <!-- gallery: 12 animales en 4 columnas x 3 filas -->
+  <section class="gallery" aria-label="Galería de animales">
+    <figure class="animal-card" data-animal="perro">
+      <img src="/dog2.jpg" alt="Perro">
+      <figcaption><h3>Perro</h3><p>Doméstico, leal y con muchas razas.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="serpiente">
+      <img src="/serpiente2.jpg" alt="Serpiente">
+      <figcaption><h3>Serpiente</h3><p>Métodos de defensa: camuflaje, veneno.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="caballo">
+      <img src="/caballo2.jpg" alt="Caballo">
+      <figcaption><h3>Caballo</h3><p>Fuerte, veloz y usado por el ser humano.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="escorpion">
+      <img src="/escorpion.jpg" alt="Escorpión">
+      <figcaption><h3>Escorpión</h3><p>Pinzas y aguijón con veneno.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="toro">
+      <img src="/toro.jpg" alt="Toro">
+      <figcaption><h3>Toro</h3><p>Poderoso; defensa con embestidas.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="abejas">
+      <img src="/abejas.jpg" alt="Abejas">
+      <figcaption><h3>Abejas</h3><p>Trabajadoras y defensivas; pueden picar.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="hormigas">
+      <img src="/hormigas.jpg" alt="Hormigas">
+      <figcaption><h3>Hormigas</h3><p>Colonia organizada; algunas pican o usan ácido.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="zarigueya">
+      <img src="/zarigueya.jpg" alt="Zarigüeya">
+      <figcaption><h3>Zarigüeya</h3><p>Finge estar muerta como defensa.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="tortuga">
+      <img src="/tortuga.jpg" alt="Tortuga">
+      <figcaption><h3>Tortuga</h3><p>Caparazón duro para protegerse.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="pulpo">
+      <img src="/octopus.jpg" alt="Pulpo">
+      <figcaption><h3>Pulpo</h3><p>Expulsa tinta y cambia color para escapar.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="rana">
+      <img src="/rana.jpg" alt="Rana">
+      <figcaption><h3>Rana</h3><p>Algunas son venenosas; colores de aviso.</p></figcaption>
+    </figure>
+
+    <figure class="animal-card" data-animal="zorrillo">
+      <img src="/zorrillo.jpg" alt="Zorrillo">
+      <figcaption><h3>Zorrillo</h3><p>Libera un olor fuerte como defensa.</p></figcaption>
+    </figure>
+  </section>
+
+  <!-- viewer overlay + detail panel -->
+  <div id="viewer" class="viewer-overlay" role="dialog" aria-hidden="true" aria-label="Detalle del animal">
+    <div class="detail-panel" role="document">
+      <div class="viewer-media" id="viewerMedia">
+        <img id="viewerImg" src="" alt="">
+      </div>
+      <div class="viewer-info" id="viewerInfo">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div>
+            <h2 id="viewerTitle">Título</h2>
+            <div class="meta" id="viewerMeta">Animal · Información</div>
+          </div>
+          <button id="btnClose" class="btn-close" aria-label="Cerrar">✕</button>
+        </div>
+        <p id="viewerText">Texto extendido sobre el animal...</p>
+        <div class="viewer-actions">
+          <button id="btnMore" class="btn-more" style="background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;">Más curiosidades</button>
+          <button id="btnSource" class="btn-source" style="background:transparent; color:var(--fg); border:1px solid rgba(0,0,0,0.08); padding:8px 12px; border-radius:8px; cursor:pointer;">Fuente</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" role="region" aria-label="Control de tema">
+    <div class="label"><div class="title">Tema</div><div id="modeDesc" class="subtitle">Modo claro</div></div>
+    <button id="themeSwitch" class="switch" aria-pressed="false" aria-label="Alternar modo oscuro"><span class="knob" aria-hidden="true"></span></button>
+  </div>
+
+  <div class="hint" style="text-align:center; width:100%;">Haz clic en el interruptor para cambiar de modo.</div>
+
+  <footer class="site-footer" role="contentinfo">
+    este es mi proyecto de Dev Senior Code, soy el estudiante Cristian David Velasco, Toda la informacion la saque de google, igual que las imagenes,
+    <div class="footer-email">Chrisvellsx@gmail.com</div>
+  </footer>
+
+  <script>
+    // theme switch
+    const bodyEl = document.body;
+    const btn = document.getElementById('themeSwitch');
+    const desc = document.getElementById('modeDesc');
+    const storageKey = 'site-theme-dark';
+    const saved = (function(){ try{return localStorage.getItem(storageKey)}catch(e){return null} })();
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = saved !== null ? saved === '1' : prefersDark;
+    function apply(dark){
+      if(dark){ bodyEl.classList.add('dark'); btn.classList.add('on'); btn.setAttribute('aria-pressed','true'); desc.textContent='Modo oscuro'; }
+      else{ bodyEl.classList.remove('dark'); btn.classList.remove('on'); btn.setAttribute('aria-pressed','false'); desc.textContent='Modo claro'; }
+    }
+    apply(isDark);
+    btn.addEventListener('click', ()=>{ const now = !bodyEl.classList.contains('dark'); apply(now); try{ localStorage.setItem(storageKey, now ? '1' : '0') }catch{} });
+    if(saved === null && window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => apply(e.matches));
+
+    // viewer logic & data
+    const viewer = document.getElementById('viewer');
+    const viewerImg = document.getElementById('viewerImg');
+    const viewerTitle = document.getElementById('viewerTitle');
+    const viewerMeta = document.getElementById('viewerMeta');
+    const viewerText = document.getElementById('viewerText');
+    const btnClose = document.getElementById('btnClose');
+    const btnMore = document.getElementById('btnMore');
+    const btnSource = document.getElementById('btnSource');
+
+    const ANIMALS = {
+      perro:{ title:'Perro', meta:'Canis lupus familiaris', text:'Los perros son animales domesticados con una gran variedad de razas. Su mecanismo de defensa incluye el ladrido para alertar y la cooperación con humanos.', more:'Curiosidad: algunas razas tienen instintos de protección muy desarrollados.'},
+      serpiente:{ title:'Serpiente', meta:'Serpentes', text:'Las serpientes usan camuflaje, siseo y veneno en muchas especies para defenderse.', more:'Curiosidad: no todas las serpientes son venenosas.'},
+      caballo:{ title:'Caballo', meta:'Equus ferus caballus', text:'Los caballos son animales de presa que huyen ante el peligro; usan velocidad y patadas.', more:'Curiosidad: tienen visión casi panorámica.'},
+      escorpion:{ title:'Escorpión', meta:'Scorpiones', text:'Cuentan con pinzas y un aguijón venenoso como defensa.', more:'Curiosidad: brillan bajo luz UV.'},
+      toro:{ title:'Toro', meta:'Bos taurus', text:'Usa su fuerza y cuernos para embestir y defender su territorio.', more:'Curiosidad: puede mostrar conductas territoriales.'},
+      abejas:{ title:'Abejas', meta:'Apidae', text:'Protegen la colmena con picaduras; la colonia se defiende colectivamente.', more:'Curiosidad: usan feromonas para alertar.'},
+      hormigas:{ title:'Hormigas', meta:'Formicidae', text:'Actúan en grupo; algunas pican o liberan sustancias defensivas.', more:'Curiosidad: algunas cultivan hongos.'},
+      zarigueya:{ title:'Zarigüeya', meta:'Didelphis', text:'Puede fingir estar muerta para disuadir depredadores (tanatosis).', more:'Curiosidad: la tanatosis puede durar minutos u horas.'},
+      tortuga:{ title:'Tortuga', meta:'Testudines', text:'Usan el caparazón como protección pasiva.', more:'Curiosidad: algunas migran largas distancias.'},
+      pulpo:{ title:'Pulpo', meta:'Octopoda', text:'Usa camuflaje, tinta y refugios; es muy inteligente.', more:'Curiosidad: pueden usar herramientas.'},
+      rana:{ title:'Rana', meta:'Anura', text:'Algunas usan colores brillantes y toxinas para defensa.', more:'Curiosidad: obtienen toxinas de su dieta.'},
+      zorrillo:{ title:'Zorrillo', meta:'Mephitidae', text:'Libera un spray oloroso muy efectivo como defensa.', more:'Curiosidad: apuntan con precisión.'}
+    };
+
+    document.querySelectorAll('.animal-card').forEach(card => {
+      card.setAttribute('tabindex','0');
+      card.setAttribute('role','button');
+      card.addEventListener('click', () => openCard(card));
+      card.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); openCard(card); } });
+    });
+
+    function openCard(card){
+      const key = card.dataset.animal;
+      const data = ANIMALS[key];
+      if(!data) return;
+      const img = card.querySelector('img');
+      viewerImg.src = img ? img.src : '';
+      viewerImg.alt = data.title;
+      viewerTitle.textContent = data.title;
+      viewerMeta.textContent = data.meta;
+      viewerText.textContent = data.text;
+      btnMore.dataset.more = data.more || '';
+      viewer.setAttribute('aria-hidden','false'); viewer.classList.add('open');
+      document.documentElement.style.overflow='hidden';
+      btnClose.focus();
+    }
+
+    function closeViewer(){ viewer.classList.remove('open'); viewer.setAttribute('aria-hidden','true'); viewerImg.src=''; document.documentElement.style.overflow=''; }
+
+    btnClose.addEventListener('click', closeViewer);
+    viewer.addEventListener('click', e => { if(e.target===viewer) closeViewer(); });
+    document.addEventListener('keydown', e => { if(e.key==='Escape' && viewer.classList.contains('open')) closeViewer(); });
+    btnMore.addEventListener('click', ()=> alert(btnMore.dataset.more || 'Sin información extra.'));
+    btnSource.addEventListener('click', ()=> { const q = encodeURIComponent(viewerTitle.textContent + ' facts'); window.open('https://www.google.com/search?q='+q, '_blank'); });
+  </script>
+</body>
+</html>
